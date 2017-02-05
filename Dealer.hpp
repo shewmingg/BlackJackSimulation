@@ -8,20 +8,18 @@
 
 #ifndef Dealer_hpp
 #define Dealer_hpp
-//
-//#include <stdio.h>
 #include <vector>
+#include "hand.hpp"
 //using namespace std;
 class Dealer{
-    std::vector<int> _cards;
-    int _dealerNum;
+    Hand _hand;
     int _stopNum;
 public:
-    Dealer();
-    void init();
-    int GetDealerNum();
-    int SetDealerNum();
-    void DealerDraw();
+    Dealer(int stopNum);
+    int Init();
+    Hand GetHand();
+    int DealerDraw();
+    int Reset();
 };
 
 #endif /* Dealer_hpp */

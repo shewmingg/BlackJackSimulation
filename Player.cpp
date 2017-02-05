@@ -6,144 +6,127 @@
 //
 //
 #include "util.hpp"
-#include "Player.hpp"
-Player::Player(){
-    initCards(_cards);
-}
-void Player::init(){
-    _cards.clear();
-    _op_cards.clear();
-    initCards(_cards);
-    _Dealer.init();
-}
-bool Player::PlayerMove(){
-    bool flag = false;
-    if(_op_cards.size()!=0 && isBust(_op_cards)){
-        flag = CardsMove(_op_cards) || flag;
-    }
-    if(isBust(_cards)){
-        flag = CardsMove(_cards) || flag;
-    }
-    return flag;
+#include "player.hpp"
+#include <iostream>
+#include <vector>
+#include <iostream>
+using namespace std;
+Player::Player(float money, float defChip){
+    _money = money;
+    _defChip = defChip;
 }
 
-bool Player::CardsMove(std::vector<int> cards){
+// ret index of new hand
+int Player::AddHand(){
+    _hands.push_back(Hand());
+    _chips.push_back(_defChip);
+    return (int)_hands.size()-1;
+}
+
+int Player::Init(){
+    int index = AddHand();
+    _hands[index].GetHand().push_back(GetRandTen());
+     _hands[index].GetHand().push_back(GetRandTen());
+    return 0;
+}
+
+int Player::Reset(){
+    _hands.clear();
+    _chips.clear();
+    return 0;
+}
+int Player::DrawCard(int handIndex, int num){
+    for(int i=0;i<num;i++){
+        _hands[handIndex].GetHand().push_back(GetRandTen());
+    }
+    return 0;
+}
+int Player::FollowSheet(int handIndex, CARD dealerCard){
     int count=0;
     bool AF = false;
-    for(int i=0;i<cards.size();i++){
-        count += cards[i];
-        if(cards[i] == 1) {
+    for(int i=0;i<_hands[handIndex].GetHand().size();i++){
+        count += _hands[handIndex].GetHand()[i];
+        if(_hands[handIndex].GetHand()[i] == 1) {
             AF = true;
         }
     }
     if(AF && count-1<=10){
-        return PlayerAction(cards, cs[21+count-1][_Dealer.GetDealerNum()]);
+        return SheetAction(handIndex, cs[21+count-1][dealerCard-1], dealerCard);
     }
-    else if(cards.size() == 2 && cards[0] == cards[1]){
-        return PlayerAction(cards, cs[30+cards[0]][_Dealer.GetDealerNum()]);
+    else if(_hands[handIndex].GetHand().size() == 2 && _hands[handIndex].GetHand()[0] == _hands[handIndex].GetHand()[1]){
+        return SheetAction(handIndex, cs[30+_hands[handIndex].GetHand()[0]][dealerCard-1], dealerCard);
     }
-    else {
-        return PlayerAction(cards, cs[count][_Dealer.GetDealerNum()]);
+    else if(count<=21){
+        return SheetAction(handIndex, cs[count][dealerCard-1], dealerCard);
+    }
+    else{
+        return 0;
     }
 }
-
-bool Player::PlayerAction(std::vector<int> cards, char action){
-    if(action == 'H'){
-        cards.push_back(GetRandTen());
-        return true;
+// ret 1: keep on checking.
+int Player::SheetAction(int handIndex, char action, CARD dealerCard){
+    cout<<action<<" ";
+    switch (action) {
+        case 'H':
+            _hands[handIndex].GetHand().push_back(GetRandTen());
+            return 1;
+        case 'S':
+            return 0;
+        case 'D':
+             _hands[handIndex].GetHand().push_back(GetRandTen());
+            if(_hands[handIndex].GetHand().size() == 3){
+                DoubleChip(handIndex);
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        case 'P':
+             _hands[handIndex].GetHand().pop_back();
+            int newIndex = AddHand();
+            _hands[newIndex].GetHand().push_back( _hands[handIndex].GetHand()[0]);
+            DrawCard(handIndex, 1);
+            DrawCard(newIndex, 1);
+            if(_hands[handIndex].GetHand()[0]==1){
+                return 0;
+            }
+            else{
+                while(FollowSheet(newIndex, dealerCard));
+                return 1;
+            }
     }
-    if(action == 'D'){
-        if(!DoubleChip(cards)){
-            cards.push_back(GetRandTen());
-            _Dealer.DealerDraw();
-            Match();
-            return false;
-        }
-        cards.push_back(GetRandTen());
-        return true;
-    }
-    if(action == 'S'){
-        _Dealer.DealerDraw();
-        Match();
-        return false;
-    }
-    if(action == 'P'){
-        Split();
-        return true;
-    }
-    if(action == 'W'){
-        _money += 1.5 * _chip;
-        return false;
-    }
-    
-    return true;
+    return -1;
 }
 
-int Player::CardCount(std::vector<int> cards){
-    int total = 0;
-    for(int i=0;i<cards.size();i++){
-        total += cards[i];
+int Player::Match(int handIndex, Hand dealerHand){
+    if(_hands[handIndex].isBust() || (!dealerHand.isBust() && _hands[handIndex].CardCount()<dealerHand.CardCount())){
+        _money-= _chips[handIndex];
     }
-    return total;
+    else if (_hands[handIndex].CardCount() == 21 && _hands[handIndex].GetHand().size() == 2){
+        _money+=1.5*_chips[handIndex];
+    }
+    else if (dealerHand.isBust() || (_hands[handIndex].CardCount()>dealerHand.CardCount() && !_hands[handIndex].isBust())){
+        _money +=_chips[handIndex];
+    }
+    return 0;
+}
+int Player::SetDefaultChip(float chip){
+    _defChip = chip;
+    return 0;
 }
 
-
-void Player::initCards(std::vector<int> cards){
-    cards.push_back(GetRandTen());
-    cards.push_back(GetRandTen());
+int Player::SetMoney(float money){
+    _money = money;
+    return 0;
 }
-bool Player::Split(){
-    if (_cards.size() == 2){
-        //move last card in hand to another vector
-        _op_cards.push_back(_cards[0]);
-        _cards.pop_back();
-        
-        //draw two card seperately into two cards vector
-        _op_cards.push_back(GetRandTen());
-        _cards.push_back(GetRandTen());
-
-        return true;
-    }
-    return false;
+int Player::DoubleChip(int index){
+    _chips[index]*=2;
+    return 0;
 }
 
-bool Player::DoubleChip(std::vector<int> cards){
-    if(cards.size() == 2){
-        _chip*=2;
-        return true;
-    }
-    return false;
+std::vector<Hand> Player::GetHands(){
+    return _hands;
 }
-bool Player::isBust(std::vector<int> cards){
-    if(CardCount(cards)>21){
-        return true;
-    }
-    return false;
-}
-
-int Player::Match(){
-    int total = 0;
-    if(_op_cards.size()!= 0){
-        if(CardCount(_op_cards)>_Dealer.GetDealerNum()){
-            _money+= _chip;
-            total ++;
-        }
-        else if(CardCount(_op_cards)<_Dealer.GetDealerNum()){
-            _money-= _chip;
-            total --;
-        }
-    }
-    if(CardCount(_cards)>_Dealer.GetDealerNum()){
-        _money+= _chip;
-        total ++;
-    }
-    else if(CardCount(_cards)<_Dealer.GetDealerNum()){
-        _money-= _chip;
-        total --;
-    }
-    return total;
-}
-
-int Player::getMoney(){
+int Player::GetMoney(){
     return _money;
 }

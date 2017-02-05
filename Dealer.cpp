@@ -6,43 +6,29 @@
 //
 //
 
-#include "Dealer.hpp"
+#include "dealer.hpp"
 #include "util.hpp"
-Dealer::Dealer(){
-    _stopNum = 17;
-    _cards.push_back(GetRandTen());
+#include <iostream>
+Dealer::Dealer(int stopNum){
+    _stopNum = stopNum;
 }
-void Dealer::init(){
-    _cards.clear();
-    _cards.push_back(GetRandTen());
-    _dealerNum = 0;
-                     
-}
-void Dealer::DealerDraw(){
-    while(GetDealerNum()<_stopNum){
-        _cards.push_back(GetRandTen());
-        SetDealerNum();
+int Dealer::DealerDraw(){
+    while(_hand.CardCount()<=_stopNum){
+        _hand.GetHand().push_back(GetRandTen());
     }
+    return _hand.CardCount();
 }
-int Dealer::GetDealerNum(){
-    return _dealerNum;
+
+int Dealer::Init(){
+    _hand.GetHand().push_back(GetRandTen());
+    return 0;
 }
-int Dealer::SetDealerNum(){
-    int total = 0;
-    int AF = 0;
-    for(int i=0;i<_cards.size();i++){
-        if(_cards[i] == 1){
-            total += 11;
-            AF++;
-        }
-        else if(total>21 && AF){
-            AF--;
-            total -=10;
-            total +=_cards[i];
-        }else{
-            total += _cards[i];
-        }
-    }
-    _dealerNum = total;
-    return _dealerNum;
+
+int Dealer::Reset(){
+    _hand.GetHand().clear();
+    return 0;
+}
+
+Hand Dealer::GetHand(){
+    return _hand;
 }

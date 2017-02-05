@@ -8,30 +8,33 @@
 
 #ifndef Player_hpp
 #define Player_hpp
-#include "Dealer.hpp"
 #include <vector>
+#include "hand.hpp"
 //#include <stdio.h>
 //using namespace std;
 class Player{
-    std::vector<int> _cards;
-    std::vector<int> _op_cards;
-    int _chip;
-    int _money;
-    Dealer _Dealer;
+    std::vector<Hand> _hands;
+    std::vector<float> _chips;
+    float _defChip;
+    float _money;
 public:
-    Player();
-    void init();
-    void initCards(std::vector<int> cards);
-    bool PlayerMove();
-    bool CardsMove(std::vector<int> cards);
+    Player(float money, float defChip);
+    int Init();
+    int Reset();
+    int AddHand();
+    int DrawCard(int handIndex, int num);//draw num cards in hand
+    int FollowSheet(int handIndex, CARD dealerCard);
+    int SheetAction(int handIndex, char action, CARD dealerCard);
     
-    bool PlayerAction(std::vector<int> cards, char action);
-    int CardCount(std::vector<int> cards);
-    bool Split();
-    bool DoubleChip(std::vector<int> cards);
-    int Match();
-    bool isBust(std::vector<int> cards);
+    int SetDefaultChip(float chip);
+    int SetMoney(float money);
+    int GetMoney();
     
-    int getMoney();
+    int Match(int handIndex, Hand dealerHand);
+    
+    int DoubleChip(int index);
+    
+    std::vector<Hand> GetHands();
+    
 };
 #endif /* Player_hpp */
